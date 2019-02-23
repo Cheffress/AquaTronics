@@ -1,8 +1,10 @@
 import json
 import datetime as dt
 import time
-import RPi.GPIO as GPIO
+import pigpio as pp
 
+# Must run below prior to running code
+# sudo pigpiod
 
 
 #%%##############################
@@ -28,29 +30,22 @@ def logMessage(message):
 # Board setup
 #################################
 
-# Set the board mode - BCM or BOARD
-GPIO.setmode(GPIO.BOARD)
-
-logMessage('GPIO mode: {}'.format(GPIO.getmode()))
-
-# Disable warnings
-GPIO.setwarnings(False)
-logMessage('Warnings disabled')
+# Connects to local RPi
+pi = pp.pi()
 
 
-blueLed = 37
-GPIO.setup(blueLed,GPIO.OUT)
+blueLed = 26
+pi.set_mode(blueLed, pp.OUTPUT)
 
 # Blinking LED
-while True:
-    GPIO.output(blueLed, True)
-    logMessage('Blue LED On')
-    time.sleep(0.5)
-    GPIO.output(blueLed, False)
-    logMessage('Blue LED Off')
-    time.sleep(0.5)
-    # To togle the output
-#    GPIO.output(blueLed, not GPIO.input(blueLed))
+if False:
+    while True:
+        pi.write(blueLed, True)
+        logMessage('Blue LED On')
+        time.sleep(0.5)
+        pi.write(blueLed, False)
+        logMessage('Blue LED Off')
+        time.sleep(0.5)
 
 
 # Chaning brightness of LED
@@ -58,26 +53,26 @@ while True:
 
 # Dimming and brightening LED
 # Uses PWM
-pwmBlue = GPIO.PWM(blueLed, 1000)
-pwmBlue.start(0)
-brightness = 1
+brightness = 1.0
+resolution = 0.01
 direction = 'asc'
+pi.set_PWM_dutycycle(blueLed, 255*brightness)
 while True:
-    if direction == 'asc' and brightness == 100:
+    if direction == 'asc' and brightness == 1:
         direction = 'desc'
         logMessage('Changing to descending')
-    if direction == 'desc' and brightness == 1:
+    if direction == 'desc' and brightness <= resolution:
         direction = 'asc'
         logMessage('Changing to ascending')
     
     if direction == 'asc':
-        brightness += 1
+        brightness += resolution
     else:
-        brightness -= 1
+        brightness -= resolution
     
     # Apply new brightness
-    pwmBlue.ChangeDutyCycle(brightness)
-    time.sleep(0.05)
+    pi.set_PWM_dutycycle(blueLed, 255*brightness)
+    time.sleep(0.01)
 
 
 
@@ -85,6 +80,5 @@ while True:
 #%%##############################
 # Board cleanup
 #################################
-
-GPIO.cleanup([blueLed])
+pi.stop()
 
