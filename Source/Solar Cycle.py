@@ -65,14 +65,17 @@ if False:
 
 # Dimming and brightening LED
 # Uses PWM
-brightness = 1.0
-resolution = 0.01
+maxBrightness = 100
+minBrightness = 7
+brightness = 100
+resolution = 1
+sleepCycle = 1
 direction = 'asc'
 while True:
-    if direction == 'asc' and brightness == 1:
+    if direction == 'asc' and brightness == maxBrightness:
         direction = 'desc'
         logMessage('Changing to descending')
-    if direction == 'desc' and brightness <= resolution:
+    if direction == 'desc' and brightness <= minBrightness:
         direction = 'asc'
         logMessage('Changing to ascending')
     
@@ -82,11 +85,11 @@ while True:
         brightness -= resolution
     
     # Apply new brightness
-    pi.set_PWM_dutycycle(redLed, 255*brightness)
-    pi.set_PWM_dutycycle(greenLed, 255*brightness)
-    pi.set_PWM_dutycycle(blueLed, 255*brightness)
-#    time.sleep(0.01)
-
+    print(brightness)
+    pi.set_PWM_dutycycle(redLed, brightness)
+    pi.set_PWM_dutycycle(greenLed, brightness)
+    pi.set_PWM_dutycycle(blueLed, brightness)
+    time.sleep(sleepCycle)
 
 
 
