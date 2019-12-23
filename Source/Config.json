@@ -1,3 +1,19 @@
 {
-	"logFile": "LogFileLocationHere"
+	"logFile": "LogFileLocationHere",
+	"intervalSeconds": 10,
+	"led": {
+		"pins": {
+			"r": 17,
+			"g": 11,
+			"b": 26
+			},
+		"brightness": {
+			"max": 100,
+			"min": 7
+			}
+		},
+	"schedule": {
+		"time": ["00:00","08:00","09:00","19:00","20:00","22:00","22:30"],
+		"colour": ["000000","000000","FFFFFF","888888","0000AA","0000AA","000000"]
+		}
 }
