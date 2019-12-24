@@ -20,7 +20,7 @@ import os
 from datetime import datetime as dt
 import math
 
-piOutput = True
+piOutput = False
 host = 'pc'
 configFile = 'Config.json'
 
@@ -49,11 +49,17 @@ CONFIG = json.loads(open(configFile,'r').read())
 #%%##############################
 # General setup
 #################################
-maxBrightness = CONFIG['led']['brightness']['max']
-minBrightness = CONFIG['led']['brightness']['min']
-resolution = CONFIG['led']['brightness']['resolution']
 sleepCycle = CONFIG['intervalSeconds']
-#schedule = CONFIG['schedule']
+ledBrightness = CONFIG['led']['brightness']
+brightnessRange = ledBrightness['max'] - ledBrightness['min']
+
+# Set up the schedule
+schedule = pd.DataFrame(CONFIG['schedule'])
+schedule['time'] = pd.to_datetime(schedule['time'], format='%H:%M%:%S', errors='ignore')
+endOfDay = pd.DataFrame([['23:59:59','000000']], columns=['time','colour'])
+schedule = schedule.append(endOfDay)
+schedule.sort_values(by='time')
+schedule['time'] = pd.to_datetime(schedule['time'])
 
 
 #%%##############################
@@ -80,72 +86,43 @@ def timeInRange(start, end, x):
 def hexToRgb(h):
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
-def ledColour(schedule,ledBrightness):
+def rgbToHex(rgb):
+    return '%02x%02x%02x' % rgb
+
+def ledColour(schedule, ledBrightness, piOutput):
     '''Returns rgb values'''
+    
     now = pd.to_datetime(dt.now())
     
+    for i in range(1,len(schedule)):
+        if now >= schedule.iloc[i-1,0] and now < schedule.iloc[i,0]:
+            # Setup
+            periodSeconds = (schedule.iloc[i,0]-schedule.iloc[i-1,0]).total_seconds()
+            expiredSeconds = periodSeconds-(schedule.iloc[i,0]-now).total_seconds()
+            expiredPercent = expiredSeconds/periodSeconds
+            startRgb = hexToRgb(schedule.iloc[i-1,1])
+            endRgb = hexToRgb(schedule.iloc[i,1])
+            
+            # Get r 8-bit value
+            rEightBit = (startRgb[0]+(endRgb[0] - startRgb[0])*expiredPercent)
+            gEightBit = (startRgb[1]+(endRgb[1] - startRgb[1])*expiredPercent)
+            bEightBit = (startRgb[2]+(endRgb[2] - startRgb[2])*expiredPercent)
+            # Convert r value to within brightness range
+            r = math.ceil(rEightBit/255*brightnessRange)+ledBrightness['min']
+            g = math.ceil(gEightBit/255*brightnessRange)+ledBrightness['min']
+            b = math.ceil(bEightBit/255*brightnessRange)+ledBrightness['min']
+            break
     
-    r=1
-    g=2
-    b=3
-    return r, g, b
-
-#r,g,b = ledColour(schedule,CONFIG['led'])
+    if piOutput:
+        return r, g, b
+    else:
+        return '#' + rgbToHex((math.ceil(rEightBit),math.ceil(gEightBit),math.ceil(bEightBit)))
 
 
-
-
-
-
-
-ledBrightness = CONFIG['led']['brightness']
-schedule = CONFIG['schedule']
-brightnessRange = ledBrightness['max'] - ledBrightness['min']
-
-schedule = pd.DataFrame(schedule)
-schedule['time'] = pd.to_datetime(schedule['time'], format='%H:%M%:%S', errors='ignore')
-endOfDay = pd.DataFrame([['23:59:59','000000']], columns=['time','colour'])
-schedule = schedule.append(endOfDay)
-schedule.sort_values(by='time')
-schedule['time'] = pd.to_datetime(schedule['time'])
-
-now = pd.to_datetime(dt.now())
-
-for i in range(1,len(schedule)):
-    if now >= schedule.iloc[i-1,0] and now < schedule.iloc[i,0]:
-        print(schedule.iloc[i-1,0],schedule.iloc[i,0])
-        periodSeconds = (schedule.iloc[i,0]-schedule.iloc[i-1,0]).total_seconds()
-        expiredSeconds = periodSeconds-(schedule.iloc[i,0]-now).total_seconds()
-        expiredPercent = expiredSeconds/periodSeconds
-        startRgb = hexToRgb(schedule.iloc[i-1,1])
-        endRgb = hexToRgb(schedule.iloc[i,1])
-        
-        
-        r = (abs(endRgb[0] - startRgb[0])/255 / ledBrightness['max'] * brightnessRange)+ledBrightness['min']
-        # Get r value
-        r = (startRgb[0]+(endRgb[0] - startRgb[0])*expiredPercent)
-        # Convert r value to within range
-        r = math.ceil(r/255*ledBrightness['max'])
-        
-        
-        
-        if startRgb <> endRgb:
-        
-        
-        
-        if r <= ledBrightness['min']:
-            # Turn r off
-            pi.write(redLed, False)
-        else:
-            pi.write(redLed, True)
-        
-        
-        
-        print(periodSeconds,expiredSeconds,expiredPercent)
-        break
-        
-    
-
+def changeColours():
+    colour=ledColour(schedule,ledBrightness,piOutput)
+    window.configure(background=colour)
+    window.after(1000, changeColours)
 
 
 #%%##############################
@@ -156,6 +133,7 @@ if piOutput == False:
     window.title('Light colour display')
     window.geometry('500x200')
     window.configure(background='black')
+    window.after(100,changeColours)
     window.mainloop()
     
 
@@ -177,14 +155,34 @@ if piOutput:
     pi.set_mode(greenLed, pp.OUTPUT)
     pi.set_mode(blueLed, pp.OUTPUT)
     
-    
-    # Dimming and brightening LED
-    brightness = 0
+    while 1 == 1:
+        # Determine current colours
+        r,g,b = ledColour(schedule, ledBrightness, piOutput)
+        
+        # R
+        if r <= ledBrightness['min']:
+            # Turn r off
+            pi.write(redLed, False)
+        else:
+            pi.write(redLed, True)
+            pi.set_PWM_dutycycle(redLed, r)
+        # G
+        if g <= ledBrightness['min']:
+            # Turn r off
+            pi.write(greenLed, False)
+        else:
+            pi.write(greenLed, True)
+            pi.set_PWM_dutycycle(greenLed, g)
+        # B
+        if b <= ledBrightness['min']:
+            # Turn r off
+            pi.write(blueLed, False)
+        else:
+            pi.write(blueLed, True)
+            pi.set_PWM_dutycycle(blueLed, b)
 
-    pi.set_PWM_dutycycle(redLed, brightness)
-    pi.set_PWM_dutycycle(greenLed, brightness)
-    pi.set_PWM_dutycycle(blueLed, brightness)
-    time.sleep(sleepCycle)
+        # Pause for n seconds
+        time.sleep(1)
 
 
 
