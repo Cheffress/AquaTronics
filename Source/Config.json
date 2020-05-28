@@ -1,6 +1,9 @@
 {
 	"logFile": "LogFileLocationHere",
 	"intervalSeconds": 10,
+	"transitionTypeOptions": ["sudden","gradual"],
+	"transitionType": "sudden",
+	"schedule": "scheduleSudden",
 	"led": {
 		"pins": {
 			"r": 17,
@@ -12,8 +15,16 @@
 			"min": 7
 			}
 		},
-	"schedule": {
+	"scheduleSudden": {
+		"time": ["00:00","10:00","20:00","22:30"],
+		"colour": ["000000","FFFFFF","0000AA","000000"]
+		},
+	"scheduleGradual": {
 		"time": ["00:00","08:00","09:00","19:00","20:00","22:00","22:30"],
+		"colour": ["000000","000000","FFFFFF","FFFFFF","0000AA","0000AA","000000"]
+		},
+	"scheduleOther": {
+		"time": ["00:00","22:40","22:42","22:44","22:46","22:48","22:50"],
 		"colour": ["000000","000000","FFFFFF","FFFFFF","0000AA","0000AA","000000"]
 		}
 }

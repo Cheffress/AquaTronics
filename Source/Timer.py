@@ -1,12 +1,9 @@
 # Simple test for NeoPixels on Raspberry Pi
-import sys
-print(sys.version)
 import datetime as dt
 import time
 import math
 import board
 import neopixel
-import argparse
 
 
 scheduleTime = ['08:00','08:30','10:00','10:10','18:45','19:00','19:30','19:45','20:00','22:00']
@@ -25,7 +22,7 @@ num_pixels = 300
 ORDER = neopixel.GRB
 
 #pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=ORDER)
-
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, auto_write=False, pixel_order=ORDER)
 
 
 def timeInRange(start, end, time):
@@ -79,27 +76,13 @@ def colorWipe(pixels, color):
         pixels[i] = color
         pixels.show()
 
-# Main program logic follows:
-if __name__ == '__main__':
-    # Process arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--clear', action='store_true', help='clear the display on exit')
-    args = parser.parse_args()
-    
-    pixels = neopixel.NeoPixel(pixel_pin, num_pixels, auto_write=False, pixel_order=ORDER)
-    
-    print ('Press Ctrl-C to quit.')
-    if not args.clear:
-        print('Use "-c" argument to clear LEDs on exit')
 
-    try:
-
-        while True:
-            colorWipe(pixels,newColour(scheduleTime, scheduleColour, dt.datetime.now()))
-            pixels.show()
-            time.sleep(10)
-
-
-    except KeyboardInterrupt:
-        if args.clear:
-            colorWipe(pixels, (0,0,0))
+while True:
+#    pixels.fill(newColour(scheduleTime, scheduleColour, dt.datetime.now()))
+    colorWipe(pixels,newColour(scheduleTime, scheduleColour, dt.datetime.now()))
+#    pixels.fill((50,50,0))
+#    pixels.fill((50,12,10))
+#    pixels.fill((15,0,10))
+#    pixels.fill((0,0,10))
+    pixels.show()
+    time.sleep(10)

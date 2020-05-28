@@ -38,7 +38,7 @@ bValue = 0
 if host == 'pi':
     homeDir = '/home/pi/Documents/Aquatronics/Source'
 else:
-    homeDir = 'E:/Git/Aquatronics/Source'
+    homeDir = 'D:/Git/Aquatronics/Source'
 
 os.chdir(homeDir)
 
@@ -54,7 +54,7 @@ ledBrightness = CONFIG['led']['brightness']
 brightnessRange = ledBrightness['max'] - ledBrightness['min']
 
 # Set up the schedule
-schedule = pd.DataFrame(CONFIG['schedule'])
+schedule = pd.DataFrame(CONFIG[CONFIG['schedule']])
 schedule['time'] = pd.to_datetime(schedule['time'], format='%H:%M%:%S', errors='ignore')
 endOfDay = pd.DataFrame([['23:59:59','000000']], columns=['time','colour'])
 schedule = schedule.append(endOfDay)
@@ -76,12 +76,12 @@ def readJson(fileName):
     json_output = json.loads(open(fileName,'r').read())
     return json_output
 
-def timeInRange(start, end, x):
-    '''Return true if x is in the range [start, end]'''
-    if start <= end:
-        return start <= x <= end
-    else:
-        return start <= x or x <= end
+#def timeInRange(start, end, x):
+#    '''Return true if x is in the range [start, end]'''
+#    if start <= end:
+#        return start <= x <= end
+#    else:
+#        return start <= x or x <= end
 
 def hexToRgb(h):
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
